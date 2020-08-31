@@ -3,7 +3,6 @@ package resource
 import (
 	"encoding/json"
 	"net"
-	"sync"
 	"time"
 )
 
@@ -16,7 +15,14 @@ type ResourceResult struct {
 	Name      string            `json:"name"`
 	Timestamp time.Time         `json:"timestamp"`
 	Result    map[string]string `json:"result"`
-	lock      sync.RWMutex
+}
+
+func NewResourceResult(n string, r map[string]string) *ResourceResult {
+	return &ResourceResult{
+		Timestamp: time.Now(),
+		Name:      n,
+		Result:    make(map[string]string),
+	}
 }
 
 type ResourceInfo interface {

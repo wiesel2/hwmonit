@@ -7,6 +7,7 @@ import (
 
 type BeatStatus int
 
+// Export
 const (
 	BeatInit BeatStatus = iota
 	BeatRun
@@ -18,29 +19,57 @@ type Tick struct {
 	CreateTS time.Time
 }
 
+type CallbackFunc func(t Tick)
+
 type Beat struct {
 	Name     string
 	CreateTS time.Time
 	Status   BeatStatus
 	maxSeq   int
-	Context  context.Context
-	interval int // second
-	tickChan chan Tick
+	//
+	context    context.Context
+	interval   int // second
+	tickChan   chan Tick
+	stopped    chan int
+	cancelFunc context.CancelFunc
+	Callback   CallbackFunc
+	lastTick   Tick
 }
 
-func (b *Beat) Increase() {
+func (b *Beat) increase() {
 	b.maxSeq++
 }
 
-func NewBeat(name string) *Beat {
+// Export,
+func NewBeatWithInterval(name string, interval int, cb CallbackFunc) *Beat {
+	if interval <= 0 {
+		panic("Beat interval must greater than 0")
+	}
+	ctx, cancalFunc := context.WithCancel(context.Background())
 	return &Beat{
-		Name:    name,
-		Context: context.Background(),
+		Name:       name,
+		context:    ctx,
+		cancelFunc: cancalFunc,
+		tickChan:   make(chan Tick),
+		CreateTS:   time.Now(),
+		interval:   interval,
+		Callback:   cb,
+		stopped:    make(chan int, 1),
 	}
 }
 
+// Export
 func (b *Beat) Tick() Tick {
-	return <-b.tickChan
+	for {
+		select {
+		case <-b.stopped:
+			// stopped
+			break
+		case t := <-b.tickChan:
+			b.lastTick = t
+			b.Callback(t)
+		}
+	}
 }
 
 func (b *Beat) Run() {
@@ -48,21 +77,29 @@ func (b *Beat) Run() {
 		return
 	}
 	go func() {
+		defer func() { b.stopped <- 1 }()
 		tempTick := time.NewTicker(time.Duration(b.interval) * time.Second)
 		b.Status = BeatRun
 		for {
 			select {
-			case <-b.Context.Done():
+			case <-b.context.Done():
 				// stop
 				b.Status = BeatStop
-				return
+				close(b.tickChan)
+				break
 			default:
 				// do heartbeat
 				t := <-tempTick.C
 				b.tickChan <- Tick{seq: b.maxSeq, CreateTS: t}
-				b.Increase()
+				b.increase()
 			}
 		}
 	}()
+}
 
+// Export, 阻塞
+func (b *Beat) Stop() {
+	b.cancelFunc()
+	// 等待Run退出
+	<-b.stopped
 }

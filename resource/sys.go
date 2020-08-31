@@ -1,10 +1,14 @@
 package resource
 
 import (
+	"bytes"
+	"context"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
+	"time"
 )
 
 type systype int
@@ -46,6 +50,35 @@ func checksystype() {
 			SysType = Docker
 		}
 	})
+}
+
+func execSysCmd(timeout int, cmd ...string) (string, error) {
+	// create new goroutine to exec cmd
+	context.WithTimeout(context.Background(), time.Duration(timeout))
+
+	var result *string
+	var err *error
+	rc := make(chan interface{}, 1)
+
+	go func(s *string, err *error, rc chan interface{}) {
+		c := exec.Command(cmd[0], cmd[1:]...)
+		stdout := &bytes.Buffer{}
+		c.Stdout = stdout
+		erro := c.Start()
+		if erro != nil {
+			err = &erro
+			return
+		}
+		c.Wait()
+		*result = string(stdout.Bytes())
+		rc <- 1
+	}(result, err, rc)
+	// wait result
+	<-rc
+	if err != nil {
+		return "", *err
+	}
+	return *result, *err
 }
 
 func GetSysType() systype {
