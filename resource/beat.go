@@ -41,7 +41,7 @@ func (b *Beat) increase() {
 }
 
 // Export,
-func NewBeatWithInterval(name string, interval int, cb CallbackFunc) *Beat {
+func NewBeatWithInterval(name string, interval int) *Beat {
 	if interval <= 0 {
 		panic("Beat interval must greater than 0")
 	}
@@ -53,14 +53,14 @@ func NewBeatWithInterval(name string, interval int, cb CallbackFunc) *Beat {
 		tickChan:   make(chan Tick),
 		CreateTS:   time.Now(),
 		interval:   interval,
-		Callback:   cb,
-		stopped:    make(chan int, 1),
+		// Callback:   cb,
+		stopped: make(chan int, 1),
 	}
 }
 
 // Export
-func (b *Beat) Tick() Tick {
-	go b.Run()
+func (b *Beat) tick() Tick {
+	go b.run()
 	for {
 		select {
 		case <-b.stopped:
@@ -73,8 +73,11 @@ func (b *Beat) Tick() Tick {
 	}
 }
 
-func (b *Beat) Run() {
+func (b *Beat) run() {
 	if b.Status == BeatStop || b.Status == BeatRun {
+		return
+	}
+	if b.Callback == nil {
 		return
 	}
 	go func() {
@@ -99,7 +102,7 @@ func (b *Beat) Run() {
 }
 
 // Export, 阻塞
-func (b *Beat) Stop() {
+func (b *Beat) stop() {
 	b.cancelFunc()
 	// 等待Run退出
 	<-b.stopped

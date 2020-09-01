@@ -6,15 +6,15 @@ import "google/api/annotations.proto";
 option go_package = ".;network";
 
 service HWMonit {
-    rpc getall(google.protobuf.Empty) returns (Resp){
+    rpc GetAll(google.protobuf.Empty) returns (Resp){
         option (google.api.http) = {
             post: "/hwmonit/v1/getall"
             body: "*"
         };
     }
-    rpc get(GetReq) returns (Resp){
+    rpc Get(GetReq) returns (Resp){
         option (google.api.http) = {
-            post: "/hwmonit/v1/getall"
+            post: "/hwmonit/v1/geta"
             body: "*"
         };
     } 

@@ -1,11 +1,16 @@
 package resource
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"sync"
+
+	"hwmonit/network"
+
+	"github.com/golang/protobuf/ptypes/empty"
 )
 
 type ResourceType int
@@ -82,7 +87,7 @@ func (rm *ResourceManager) Start() {
 		return
 	}
 	for _, rb := range rm.rbs {
-		go func(bb *Beat) { bb.Tick() }(rb.B)
+		go func(bb *Beat) { bb.tick() }(rb.B)
 	}
 }
 
@@ -94,9 +99,17 @@ func NewResourceManager() *ResourceManager {
 	return rm
 }
 
-func (rm *ResourceManager) AddResource(r *Resource, hb *Beat) {
+func (rm *ResourceManager) AddResource(name string, interval int) {
 	rm.lock.Lock()
 	defer rm.lock.Unlock()
+	r := ResourceBuilder(name)
+	b := NewBeatWithInterval(name, int(interval))
+	rm.addResource(r, b)
+
+}
+
+func (rm *ResourceManager) addResource(r *Resource, hb *Beat) {
+
 	// bind callback
 	hb.Callback = func(t Tick) {
 		rr, err := r.C.GetInfo()
@@ -118,7 +131,7 @@ func (rm *ResourceManager) Stop() {
 	for _, v := range rm.rbs {
 		wg.Add(1)
 		go func(wg *sync.WaitGroup) {
-			v.B.Stop()
+			v.B.stop()
 			wg.Done()
 		}(&wg)
 	}
@@ -126,18 +139,71 @@ func (rm *ResourceManager) Stop() {
 	wg.Wait()
 }
 
-func (rm *ResourceManager) GetAll() map[string]interface{} {
+func getResourceResult(r *Resource) (*ResourceResult, error) {
+	if r.LastResult != nil {
+		return r.LastResult, nil
+	}
+	return nil, fmt.Errorf("Resource %s is result is empty", r.Name)
+}
+
+// Export
+func (rm *ResourceManager) GetAllR() map[string]interface{} {
 	res := make(map[string]interface{})
 	for n, v := range rm.rbs {
-		if v.R.LastResult != nil {
-			b, err := json.Marshal(*v.R.LastResult)
-			if err != nil {
-				continue
-			}
-			res[n] = b
+		rr, err := getResourceResult(v.R)
+		if err != nil {
+			continue
+		}
+		res[n] = rr
+	}
+	return res
+}
+
+// Export for RPC/http
+func (rm *ResourceManager) GetAll(ctx context.Context, in *empty.Empty) (*network.Resp, error) {
+	res, _ := json.Marshal(rm.GetAllR())
+	var suc int32 = 0
+	var msg string
+	var err error
+	if len(res) == 0 && len(rm.rbs) != 0 {
+		suc = 1
+		msg = "resource get failed."
+		err = errors.New(msg)
+	}
+	return &network.Resp{
+		State:   suc,
+		Data:    string(res),
+		Message: msg,
+	}, err
+}
+
+func (rm *ResourceManager) GetR(name string) map[string]interface{} {
+	res := make(map[string]interface{})
+	v, ok := rm.rbs[name]
+	if ok == true {
+		b, err := getResourceResult(v.R)
+		if err == nil {
+			res[name] = b
 		}
 	}
 	return res
+}
+
+func (rm *ResourceManager) Get(ctx context.Context, in *network.GetReq) (*network.Resp, error) {
+	res, _ := json.Marshal(rm.GetR(in.Name))
+	var suc int32 = 0
+	var msg string
+	var err error
+	if len(res) == 0 && len(rm.rbs) != 0 {
+		suc = 1
+		msg = "resource get failed."
+		err = errors.New(msg)
+	}
+	return &network.Resp{
+		State:   suc,
+		Data:    string(res),
+		Message: msg,
+	}, err
 }
 
 func ResourceBuilder(name string) *Resource {

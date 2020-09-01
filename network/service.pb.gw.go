@@ -32,7 +32,7 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = descriptor.ForMessage
 
-func request_HWMonit_Getall_0(ctx context.Context, marshaler runtime.Marshaler, client HWMonitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_HWMonit_GetAll_0(ctx context.Context, marshaler runtime.Marshaler, client HWMonitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq empty.Empty
 	var metadata runtime.ServerMetadata
 
@@ -44,12 +44,12 @@ func request_HWMonit_Getall_0(ctx context.Context, marshaler runtime.Marshaler, 
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.Getall(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.GetAll(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_HWMonit_Getall_0(ctx context.Context, marshaler runtime.Marshaler, server HWMonitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_HWMonit_GetAll_0(ctx context.Context, marshaler runtime.Marshaler, server HWMonitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq empty.Empty
 	var metadata runtime.ServerMetadata
 
@@ -61,7 +61,7 @@ func local_request_HWMonit_Getall_0(ctx context.Context, marshaler runtime.Marsh
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.Getall(ctx, &protoReq)
+	msg, err := server.GetAll(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -105,7 +105,7 @@ func local_request_HWMonit_Get_0(ctx context.Context, marshaler runtime.Marshale
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 func RegisterHWMonitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server HWMonitServer) error {
 
-	mux.Handle("POST", pattern_HWMonit_Getall_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_HWMonit_GetAll_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -114,14 +114,14 @@ func RegisterHWMonitHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_HWMonit_Getall_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_HWMonit_GetAll_0(rctx, inboundMarshaler, server, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_HWMonit_Getall_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_HWMonit_GetAll_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -186,7 +186,7 @@ func RegisterHWMonitHandler(ctx context.Context, mux *runtime.ServeMux, conn *gr
 // "HWMonitClient" to call the correct interceptors.
 func RegisterHWMonitHandlerClient(ctx context.Context, mux *runtime.ServeMux, client HWMonitClient) error {
 
-	mux.Handle("POST", pattern_HWMonit_Getall_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_HWMonit_GetAll_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -195,14 +195,14 @@ func RegisterHWMonitHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_HWMonit_Getall_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_HWMonit_GetAll_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_HWMonit_Getall_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_HWMonit_GetAll_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -230,13 +230,13 @@ func RegisterHWMonitHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 }
 
 var (
-	pattern_HWMonit_Getall_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"hwmonit", "v1", "getall"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_HWMonit_GetAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"hwmonit", "v1", "getall"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_HWMonit_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"hwmonit", "v1", "getall"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_HWMonit_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"hwmonit", "v1", "geta"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
-	forward_HWMonit_Getall_0 = runtime.ForwardResponseMessage
+	forward_HWMonit_GetAll_0 = runtime.ForwardResponseMessage
 
 	forward_HWMonit_Get_0 = runtime.ForwardResponseMessage
 )
