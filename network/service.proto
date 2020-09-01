@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package network;
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+option go_package = ".;network";
+
+service HWMonit {
+    rpc getall(google.protobuf.Empty) returns (Resp){
+        option (google.api.http) = {
+            post: "/hwmonit/v1/getall"
+            body: "*"
+        };
+    }
+    rpc get(GetReq) returns (Resp){
+        option (google.api.http) = {
+            post: "/hwmonit/v1/getall"
+            body: "*"
+        };
+    } 
+
+}
+
+message GetReq{
+    string name = 1; // resource name
+}
+
+message Resp{
+    int32 state = 1; // 0 success, other false
+    string data = 2;
+    string message = 3;
+}

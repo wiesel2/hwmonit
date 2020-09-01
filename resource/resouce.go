@@ -1,8 +1,10 @@
 package resource
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -22,10 +24,10 @@ var rtNameMap = map[ResourceType]string{
 	RTCPU:  "cpu",
 	RTMEM:  "memory",
 	RTSWAP: "swap",
-	RTDISK: "disk",
-	RTNET:  "net",
-	RTSHM:  "shm",
-	RTPRO:  "process",
+	// RTDISK: "disk",  // not supported
+	// RTNET:  "net",   // not supported
+	RTSHM: "shm",
+	RTPRO: "process",
 }
 
 const (
@@ -41,9 +43,13 @@ type Collector interface {
 type Resource struct {
 	Name string
 	// ResChan    chan [20]ResourceResult
-	LastResult ResourceResult
+	LastResult *ResourceResult
 	RrcType    ResourceType
-	c          Collector
+	C          Collector
+}
+
+func AllResource() map[ResourceType]string {
+	return rtNameMap
 }
 
 func rtToName(rt ResourceType) (string, error) {
@@ -54,12 +60,17 @@ func rtToName(rt ResourceType) (string, error) {
 	return "", errors.New(fmt.Sprintf("Not find rt: %s", rt))
 }
 
-func (r *Resource) Run() {
+type resbeat struct {
+	R *Resource
+	B *Beat
+}
+
+func (rb *resbeat) Name() string {
+	return rb.R.Name
 }
 
 type ResourceManager struct {
-	rs    map[string]*Resource
-	beats map[string]*Beat
+	rbs   map[string]*resbeat
 	lock  sync.Mutex
 	state int
 }
@@ -70,16 +81,14 @@ func (rm *ResourceManager) Start() {
 	if rm.state == rmStateRun || rm.state == rmStateStop {
 		return
 	}
-	for _, b := range rm.beats {
-		b.Run()
-		go func(bb *Beat{bb.Tick()}(b)
+	for _, rb := range rm.rbs {
+		go func(bb *Beat) { bb.Tick() }(rb.B)
 	}
 }
 
 func NewResourceManager() *ResourceManager {
 	rm := &ResourceManager{
-		beats: make(map[string]*Beat),
-		rs:    make(map[string]*Resource),
+		rbs:   make(map[string]*resbeat),
 		state: rmStateInit,
 	}
 	return rm
@@ -88,14 +97,75 @@ func NewResourceManager() *ResourceManager {
 func (rm *ResourceManager) AddResource(r *Resource, hb *Beat) {
 	rm.lock.Lock()
 	defer rm.lock.Unlock()
-	rm.rs[r.Name] = r
-	rm.beats[r.Name] = hb
+	// bind callback
+	hb.Callback = func(t Tick) {
+		rr, err := r.C.GetInfo()
+		if err != nil {
+			return
+		}
+		r.LastResult = rr
+	}
+	rm.rbs[r.Name] = &resbeat{
+		R: r,
+		B: hb,
+	}
 }
 
 func (rm *ResourceManager) Stop() {
 	rm.lock.Lock()
 	defer rm.lock.Unlock()
+	wg := sync.WaitGroup{}
+	for _, v := range rm.rbs {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			v.B.Stop()
+			wg.Done()
+		}(&wg)
+	}
+	// wait all close
+	wg.Wait()
+}
 
+func (rm *ResourceManager) GetAll() map[string]interface{} {
+	res := make(map[string]interface{})
+	for n, v := range rm.rbs {
+		if v.R.LastResult != nil {
+			b, err := json.Marshal(*v.R.LastResult)
+			if err != nil {
+				continue
+			}
+			res[n] = b
+		}
+	}
+	return res
+}
+
+func ResourceBuilder(name string) *Resource {
+	name = strings.ToLower(name)
+	var t ResourceType
+	var collector Collector
+	switch name {
+	case "cpu":
+		t = RTCPU
+		collector = &CPU{}
+	case "mem":
+		t = RTMEM
+		collector = &MEM{}
+	case "shm":
+		t = RTSHM
+		collector = &Shm{}
+	case "process":
+		t = RTPRO
+		collector = &Process{}
+	default:
+		return nil
+	}
+	r := Resource{
+		Name:    name,
+		RrcType: t,
+	}
+	r.C = collector
+	return &r
 }
 
 // not finished

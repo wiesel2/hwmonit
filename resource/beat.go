@@ -60,6 +60,7 @@ func NewBeatWithInterval(name string, interval int, cb CallbackFunc) *Beat {
 
 // Export
 func (b *Beat) Tick() Tick {
+	go b.Run()
 	for {
 		select {
 		case <-b.stopped:
