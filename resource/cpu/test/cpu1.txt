@@ -1,0 +1,4 @@
+Mem: 195159944K used, 2820220K free, 4334096K shrd, 3200K buff, 134593368K cached
+CPU:   6% usr   1% sys   0% nic  91% idle   0% io   0% irq   0% sirq
+Load average: 3.31 3.85 4.07 5/7990 76
+  PID  PPID USER     STAT   VSZ %VSZ CPU %CPU COMMAND

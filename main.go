@@ -6,6 +6,7 @@ import (
 	"hwmonit/common"
 	"hwmonit/network"
 	"hwmonit/resource"
+	"hwmonit/resource/base"
 	"log"
 	"net"
 	"net/http"
@@ -25,16 +26,17 @@ func main() {
 	// config := common.GetConfig()
 
 	rm := resource.NewResourceManager()
-	for _, name := range resource.AllResource() {
+	for _, name := range base.AllResource() {
 		v1, ok := os.LookupEnv(name)
 		if ok == false {
 			continue
 		}
 		interval, err := strconv.ParseInt(v1, 10, 10)
 		if err != nil {
-			interval = 30
+			continue
 		}
-		if interval >= 0 {
+
+		if interval > 0 {
 			rm.AddResource(name, int(interval))
 		}
 

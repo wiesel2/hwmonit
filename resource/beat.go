@@ -59,7 +59,7 @@ func NewBeatWithInterval(name string, interval int) *Beat {
 }
 
 // Export
-func (b *Beat) tick() Tick {
+func (b *Beat) Tick() Tick {
 	go b.run()
 	for {
 		select {

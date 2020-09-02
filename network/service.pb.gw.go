@@ -232,7 +232,7 @@ func RegisterHWMonitHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 var (
 	pattern_HWMonit_GetAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"hwmonit", "v1", "getall"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_HWMonit_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"hwmonit", "v1", "geta"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_HWMonit_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"hwmonit", "v1", "get"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (

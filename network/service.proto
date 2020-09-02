@@ -14,7 +14,7 @@ service HWMonit {
     }
     rpc Get(GetReq) returns (Resp){
         option (google.api.http) = {
-            post: "/hwmonit/v1/geta"
+            post: "/hwmonit/v1/get"
             body: "*"
         };
     } 
