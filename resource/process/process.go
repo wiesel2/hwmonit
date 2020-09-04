@@ -33,7 +33,7 @@ func (m *Process) GetInfo() (*base.ResourceResult, error) {
 		filter = `^tasks:.*`
 		key = `(\d+)`
 	case common.OSMac:
-		cmdRes, err = common.ExecSysCmd(5, "top", "|", "head", "-20")
+		cmdRes, err = common.ExecSysCmd(5, "top", "-l", "1")
 		filter = `processes:`
 		key = `(\d+)\s*`
 	default:

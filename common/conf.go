@@ -55,7 +55,8 @@ var (
 	m string // mem
 	s string // shm
 	c string // cpu
-	w string // process
+	r string // process
+	w string // swap
 )
 
 func setbool(T bool) string {
@@ -69,15 +70,19 @@ func readArgs() {
 	flag.BoolVar(&h, "h", false, "help")
 	flag.BoolVar(&t, "t", false, "enable tls")
 	setEnv("tls", setbool(t))
-	flag.StringVar(&m, "m", "0", "memory stat")
+
+	flag.StringVar(&m, "m", "30", "memory stat")
 	setEnv("mem", m)
-	flag.StringVar(&s, "s", "0", "shm tls")
+	flag.StringVar(&s, "s", "30", "shm tls")
 	setEnv("shm", s)
 	flag.StringVar(&c, "c", "30", "cpu stat")
 	setEnv("cpu", c)
-	flag.StringVar(&w, "w", "0", "process stat")
+	flag.StringVar(&r, "r", "30", "process stat")
+	setEnv("process", r)
+	flag.StringVar(&w, "w", "30", "swap stat")
 	setEnv("process", w)
 
+	// common config
 	flag.StringVar(&p, "p", "10241", "port")
 	setEnv("port", p)
 	flag.StringVar(&l, "l", "hwmonit.log", "log file name")

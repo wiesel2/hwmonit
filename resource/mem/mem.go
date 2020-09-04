@@ -28,7 +28,7 @@ func (m *MEM) GetInfo() (*base.ResourceResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	data := parseInfo(cmdRes, memMap)
+	data := ParseInfo(cmdRes, memMap)
 
 	n, _ := base.RtToName(base.RTMEM)
 	return base.NewResourceResult(n, data), nil
@@ -49,20 +49,20 @@ func (s *Swap) GetInfo() (*base.ResourceResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	data := parseInfo(cmdRes, swapMap)
+	data := ParseInfo(cmdRes, swapMap)
 	n, _ := base.RtToName(base.RTMEM)
 	return base.NewResourceResult(n, data), nil
 
 }
 
-func parseInfo(mem *[]byte, m map[string]string) map[string]string {
+func ParseInfo(mem *[]byte, m map[string]string) map[string]string {
 	res := make(map[string]string)
 	memStr := (*string)(unsafe.Pointer(mem))
 	memlines := strings.Split(*memStr, "\n")
 	for _, line := range memlines {
 		lowerStr := strings.ToLower(line)
 		for k, v := range m {
-			reg := regexp.MustCompile(k + `:\s+(\d+)\sKB`)
+			reg := regexp.MustCompile(k + `:\s+(\d+)\skb`)
 			finds := reg.FindAllStringSubmatch(lowerStr, -1)
 			if len(finds) == 0 {
 				continue
@@ -89,20 +89,25 @@ func (shm *Shm) GetInfo() (*base.ResourceResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	data := parseSHM(cmdRes)
+	data := ParseSHM(cmdRes)
 	n, _ := base.RtToName(base.RTSHM)
 	return base.NewResourceResult(n, data), nil
 
 }
 
-func parseSHM(b *[]byte) map[string]string {
+func ParseSHM(b *[]byte) map[string]string {
 	res := make(map[string]string)
 	memlines := strings.Split(*(*string)(unsafe.Pointer(b)), "\n")
 	for _, line := range memlines {
 		lowerStr := strings.ToLower(line)
 		if strings.Index(lowerStr, "shm") == 0 {
-			reg := regexp.MustCompile(`\t`)
+			reg := regexp.MustCompile(`\s+`)
 			spr := reg.Split(lowerStr, 5)
+			if len(spr) < 6 {
+				ss := strings.Split(spr[4], " ")
+				spr = spr[0:4]
+				spr = append(spr, ss...)
+			}
 			res["filesystem"] = spr[0]
 			res["blocks"] = spr[1]
 			res["used"] = spr[2]

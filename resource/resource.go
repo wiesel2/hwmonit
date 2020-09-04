@@ -5,16 +5,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hwmonit/common"
 	"hwmonit/network"
 	"hwmonit/resource/base"
 	"hwmonit/resource/cpu"
 	"hwmonit/resource/mem"
 	"hwmonit/resource/process"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/golang/protobuf/ptypes/empty"
 )
+
+var logger = common.GetLogger()
 
 type resbeat struct {
 	R *base.Resource
@@ -31,64 +35,92 @@ const (
 	rmStateStop
 )
 
-type ResourceManager struct {
+// Manager Export
+type Manager struct {
 	rbs   map[string]*resbeat
 	lock  sync.Mutex
 	state int
 }
 
-func (rm *ResourceManager) Start() {
+// Start export
+// Start, non-blocking
+func (rm *Manager) Start() {
 	rm.lock.Lock()
 	defer rm.lock.Unlock()
 	if rm.state == rmStateRun || rm.state == rmStateStop {
 		return
 	}
 	for _, rb := range rm.rbs {
-		go func(bb *Beat) { bb.Tick() }(rb.B)
+		rb.B.Start()
 	}
+	rm.state = rmStateRun
 }
 
-func NewResourceManager() *ResourceManager {
-	rm := &ResourceManager{
+// NewManager Export
+// Creator of *Manager
+func NewManager() *Manager {
+	rm := &Manager{
 		rbs:   make(map[string]*resbeat),
 		state: rmStateInit,
 	}
 	return rm
 }
 
-func (rm *ResourceManager) AddResource(name string, interval int) {
-	rm.lock.Lock()
-	defer rm.lock.Unlock()
-	r := ResourceBuilder(name)
-	b := NewBeatWithInterval(name, int(interval))
-	rm.addResource(r, b)
+// LoadAllResources Export
+// map: "source name": "interval". interval must be greater than 0!
+/* sample {
+	"cpu": "30",	// every 30 seconds
+	"mem": "20",	// every 20 seconds
+	"shm" : "dddd"	// invalid, disable shm
+	"process": "-1"	// < 0, disbale process
+}
+*/
+func (rm *Manager) LoadAllResources(config map[string]string) {
+	for _, name := range base.AllResource() {
+		v1, ok := config[name]
+		if ok == false {
+			continue
+		}
+		interval, err := strconv.ParseInt(v1, 10, 10)
+		if err != nil {
+			continue
+		}
 
+		if interval > 0 {
+			rm.addResource(name, int(interval))
+		}
+	}
 }
 
-func (rm *ResourceManager) addResource(r *base.Resource, hb *Beat) {
-
-	// bind callback
-	hb.Callback = func(t Tick) {
+// add create a new resrouce and bind a heat to peroid collect hareware info(GetInfo)
+func (rm *Manager) addResource(name string, interval int) {
+	rm.lock.Lock()
+	defer rm.lock.Unlock()
+	r := resourceBuilder(name)
+	b := NewBeatWithInterval(name, int(interval), func(t Tick) {
 		rr, err := r.C.GetInfo()
 		if err != nil {
 			return
 		}
 		r.LastResult = rr
-	}
+	})
 	rm.rbs[r.Name] = &resbeat{
 		R: r,
-		B: hb,
+		B: b,
 	}
 }
 
-func (rm *ResourceManager) Stop() {
+// Stop Export
+// Stop all source beat, blocked until all beat stopped.
+func (rm *Manager) Stop() {
 	rm.lock.Lock()
 	defer rm.lock.Unlock()
+	rm.state = rmStateStop
 	wg := sync.WaitGroup{}
 	for _, v := range rm.rbs {
 		wg.Add(1)
 		go func(wg *sync.WaitGroup) {
-			v.B.stop()
+			v.B.Stop()
 			wg.Done()
 		}(&wg)
 	}
@@ -102,8 +134,8 @@ func getResourceResult(r *base.Resource) (*base.ResourceResult, error) {
 	return nil, fmt.Errorf("Resource %s is result is empty", r.Name)
 }
 
-// Export
-func (rm *ResourceManager) GetAllR() map[string]interface{} {
+// get all resource static
+func (rm *Manager) getAllR() map[string]interface{} {
 	res := make(map[string]interface{})
 	for n, v := range rm.rbs {
 		rr, err := getResourceResult(v.R)
@@ -115,9 +147,10 @@ func (rm *ResourceManager) GetAllR() map[string]interface{} {
 	return res
 }
 
-// Export for RPC/http
-func (rm *ResourceManager) GetAll(ctx context.Context, in *empty.Empty) (*network.Resp, error) {
-	res, _ := json.Marshal(rm.GetAllR())
+// GetAll Export
+// Export for http and gRPC invoke
+func (rm *Manager) GetAll(ctx context.Context, in *empty.Empty) (*network.Resp, error) {
+	res, _ := json.Marshal(rm.getAllR())
 	var suc int32 = 0
 	var msg string
 	var err error
@@ -133,7 +166,7 @@ func (rm *ResourceManager) GetAll(ctx context.Context, in *empty.Empty) (*networ
 	}, err
 }
 
-func (rm *ResourceManager) GetR(name string) map[string]interface{} {
+func (rm *Manager) getR(name string) map[string]interface{} {
 	res := make(map[string]interface{})
 	v, ok := rm.rbs[name]
 	if ok == true {
@@ -145,8 +178,10 @@ func (rm *ResourceManager) GetR(name string) map[string]interface{} {
 	return res
 }
 
-func (rm *ResourceManager) Get(ctx context.Context, in *network.GetReq) (*network.Resp, error) {
-	res, _ := json.Marshal(rm.GetR(in.Name))
+// Get Export
+// Export for http and gRPC invoke
+func (rm *Manager) Get(ctx context.Context, in *network.GetReq) (*network.Resp, error) {
+	res, _ := json.Marshal(rm.getR(in.Name))
 	var suc int32 = 0
 	var msg string
 	var err error
@@ -162,7 +197,8 @@ func (rm *ResourceManager) Get(ctx context.Context, in *network.GetReq) (*networ
 	}, err
 }
 
-func ResourceBuilder(name string) *base.Resource {
+// resource factory to build CPU, MEM, SWAP, SHM and process etc.
+func resourceBuilder(name string) *base.Resource {
 	name = strings.ToLower(name)
 	var t base.ResourceType
 	var collector base.Collector
@@ -173,6 +209,9 @@ func ResourceBuilder(name string) *base.Resource {
 	case "mem":
 		t = base.RTMEM
 		collector = &mem.MEM{}
+	case "swap":
+		t = base.RTSWAP
+		collector = &mem.Swap{}
 	case "shm":
 		t = base.RTSHM
 		collector = &mem.Shm{}

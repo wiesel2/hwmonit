@@ -104,6 +104,5 @@ func ParseTOP(s *[]byte, filter_str, key string, keymap map[string]string) (map[
 	if len(res) == 0 {
 		return res, errors.New("Get CPU  info empty")
 	}
-
 	return res, nil
 }

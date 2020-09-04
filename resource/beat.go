@@ -2,9 +2,13 @@ package resource
 
 import (
 	"context"
+	"sync"
 	"time"
 )
 
+// var logger = common.GetLogger()
+
+// BeatStatus Export
 type BeatStatus int
 
 // Export
@@ -14,34 +18,39 @@ const (
 	BeatStop
 )
 
+// Tick epxort
 type Tick struct {
 	seq      int // 2147483648
 	CreateTS time.Time
 }
 
+// CallbackFunc Export
+// Tick Callback
 type CallbackFunc func(t Tick)
 
+//Beat Export
 type Beat struct {
-	Name     string
-	CreateTS time.Time
-	Status   BeatStatus
-	maxSeq   int
-	//
+	Name       string
+	CreateTS   time.Time
+	Status     BeatStatus
+	maxSeq     int
 	context    context.Context
 	interval   int // second
 	tickChan   chan Tick
-	stopped    chan int
 	cancelFunc context.CancelFunc
 	Callback   CallbackFunc
 	lastTick   Tick
+	ticker     *time.Ticker
+	wg         sync.WaitGroup
 }
 
 func (b *Beat) increase() {
 	b.maxSeq++
 }
 
-// Export,
-func NewBeatWithInterval(name string, interval int) *Beat {
+// NewBeatWithInterval Export
+// Creator
+func NewBeatWithInterval(name string, interval int, cb CallbackFunc) *Beat {
 	if interval <= 0 {
 		panic("Beat interval must greater than 0")
 	}
@@ -53,19 +62,47 @@ func NewBeatWithInterval(name string, interval int) *Beat {
 		tickChan:   make(chan Tick),
 		CreateTS:   time.Now(),
 		interval:   interval,
-		// Callback:   cb,
-		stopped: make(chan int, 1),
+		Callback:   cb,
+		wg:         sync.WaitGroup{},
 	}
 }
 
-// Export
-func (b *Beat) Tick() Tick {
-	go b.run()
+func (b *Beat) addOneTick(t time.Time) {
+	b.tickChan <- Tick{seq: b.maxSeq, CreateTS: t}
+	b.increase()
+}
+
+// Func of beat
+func (b *Beat) tick() {
+	b.wg.Add(1)
+	// create ticker when fisrt tick called
+	b.ticker = time.NewTicker(time.Duration(b.interval) * time.Second)
+	b.Status = BeatRun
+	// Init first beat
+	b.addOneTick(time.Now())
 	for {
 		select {
-		case <-b.stopped:
-			// stopped
-			break
+		case <-b.context.Done():
+			// stop
+			b.Status = BeatStop
+			logger.Debugf("Beat tick of %s stopped", b.Name)
+			b.wg.Done()
+			return
+		case t := <-b.ticker.C:
+			// do heartbeat
+			b.addOneTick(t)
+		}
+	}
+}
+
+func (b *Beat) listen() {
+	b.wg.Add(1)
+	for {
+		select {
+		case <-b.context.Done():
+			logger.Debugf("Beat listen of %s stopped", b.Name)
+			b.wg.Done()
+			return
 		case t := <-b.tickChan:
 			b.lastTick = t
 			b.Callback(t)
@@ -73,37 +110,25 @@ func (b *Beat) Tick() Tick {
 	}
 }
 
-func (b *Beat) run() {
+// Start export, non-blocking
+func (b *Beat) Start() {
 	if b.Status == BeatStop || b.Status == BeatRun {
 		return
 	}
 	if b.Callback == nil {
 		return
 	}
-	go func() {
-		defer func() { b.stopped <- 1 }()
-		tempTick := time.NewTicker(time.Duration(b.interval) * time.Second)
-		b.Status = BeatRun
-		for {
-			select {
-			case <-b.context.Done():
-				// stop
-				b.Status = BeatStop
-				close(b.tickChan)
-				break
-			default:
-				// do heartbeat
-				t := <-tempTick.C
-				b.tickChan <- Tick{seq: b.maxSeq, CreateTS: t}
-				b.increase()
-			}
-		}
-	}()
+	go b.listen()
+	go b.tick()
 }
 
-// Export, 阻塞
-func (b *Beat) stop() {
+// Stop Export, blocking
+func (b *Beat) Stop() {
+	b.ticker.Stop()
+	// call context cancelfunc to notify tick and listen
 	b.cancelFunc()
 	// 等待Run退出
-	<-b.stopped
+	b.wg.Wait()
+	// close chan
+	close(b.tickChan)
 }
