@@ -18,12 +18,17 @@ type ResourceResult struct {
 	Result    map[string]string `json:"result"`
 }
 
-func NewResourceResult(n string, r map[string]string) *ResourceResult {
+// NewResourceResult export
+func NewResourceResult(t ResourceType, r map[string]string) (*ResourceResult, error) {
+	n, err := rtToName(t)
+	if err != nil {
+		return nil, err
+	}
 	return &ResourceResult{
 		Timestamp: time.Now(),
 		Name:      n,
 		Result:    r,
-	}
+	}, nil
 }
 
 type ResourceType int
@@ -60,11 +65,12 @@ type Resource struct {
 	C          Collector
 }
 
+// AllResource export
 func AllResource() map[ResourceType]string {
 	return rtNameMap
 }
 
-func RtToName(rt ResourceType) (string, error) {
+func rtToName(rt ResourceType) (string, error) {
 	name, find := rtNameMap[rt]
 	if find == true {
 		return name, nil

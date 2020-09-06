@@ -12,8 +12,7 @@ import (
 // 包含3种类型
 //	memory, swap, shm
 //
-//
-
+// MEM export
 type MEM struct{}
 
 var memMap = map[string]string{
@@ -23,17 +22,17 @@ var memMap = map[string]string{
 	"Buffers": "buffers",
 }
 
+// GetInfo export
 func (m *MEM) GetInfo() (*base.ResourceResult, error) {
 	cmdRes, err := common.ExecSysCmd(5, "cat", "/proc/meminfo")
 	if err != nil {
 		return nil, err
 	}
 	data := ParseInfo(cmdRes, memMap)
-
-	n, _ := base.RtToName(base.RTMEM)
-	return base.NewResourceResult(n, data), nil
+	return base.NewResourceResult(base.RTMEM, data)
 }
 
+// Swap export
 type Swap struct{}
 
 var swapMap = map[string]string{
@@ -50,8 +49,7 @@ func (s *Swap) GetInfo() (*base.ResourceResult, error) {
 		return nil, err
 	}
 	data := ParseInfo(cmdRes, swapMap)
-	n, _ := base.RtToName(base.RTMEM)
-	return base.NewResourceResult(n, data), nil
+	return base.NewResourceResult(base.RTMEM, data)
 
 }
 
@@ -90,8 +88,7 @@ func (shm *Shm) GetInfo() (*base.ResourceResult, error) {
 		return nil, err
 	}
 	data := ParseSHM(cmdRes)
-	n, _ := base.RtToName(base.RTSHM)
-	return base.NewResourceResult(n, data), nil
+	return base.NewResourceResult(base.RTSHM, data)
 
 }
 

@@ -48,8 +48,8 @@ func (c *CPU) GetInfo() (*base.ResourceResult, error) {
 		// 从docker cgroup 文件读取
 	} else {
 	}
-	n, _ := base.RtToName(base.RTCPU)
-	return base.NewResourceResult(n, data), nil
+
+	return base.NewResourceResult(base.RTCPU, data)
 }
 
 var cupMap = map[string]string{

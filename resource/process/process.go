@@ -44,8 +44,5 @@ func (m *Process) GetInfo() (*base.ResourceResult, error) {
 		return nil, err
 	}
 	data, _ := cpu.ParseTOP(cmdRes, filter, key, processMap)
-
-	n, _ := base.RtToName(base.RTPRO)
-	return base.NewResourceResult(n, data), nil
-
+	return base.NewResourceResult(base.RTPRO, data)
 }
