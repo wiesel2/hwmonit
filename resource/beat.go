@@ -32,7 +32,7 @@ type CallbackFunc func(t Tick)
 type Beat struct {
 	Name       string
 	CreateTS   time.Time
-	Status     BeatStatus
+	status     BeatStatus
 	maxSeq     int
 	context    context.Context
 	interval   int // second
@@ -79,7 +79,7 @@ func (b *Beat) tick() {
 		select {
 		case <-b.context.Done():
 			// stop
-			b.Status = BeatStop
+			b.status = BeatStop
 			// logger.Debugf("Beat tick of %s stopped", b.Name)
 			b.wg.Done()
 			return
@@ -112,7 +112,7 @@ func (b *Beat) listen() {
 
 // Start export, non-blocking
 func (b *Beat) Start() {
-	if b.Status == BeatStop || b.Status == BeatRun {
+	if b.status == BeatStop || b.status == BeatRun {
 		return
 	}
 	if b.Callback == nil {
@@ -122,13 +122,14 @@ func (b *Beat) Start() {
 	// create ticker when fisrt tick called
 	// Init first beat
 	b.addOneTick(time.Now())
-	b.Status = BeatRun
+	b.status = BeatRun
 	go b.listen()
 	go b.tick()
 }
 
 // Stop Export, blocking
 func (b *Beat) Stop() {
+	b.status = BeatStop
 
 	// call context cancelfunc to notify tick and listen
 	b.cancelFunc()
