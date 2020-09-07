@@ -119,10 +119,10 @@ func (rm *Manager) Stop() {
 	wg := sync.WaitGroup{}
 	for _, v := range rm.rbs {
 		wg.Add(1)
-		go func(wg *sync.WaitGroup) {
-			v.B.Stop()
+		go func(wg *sync.WaitGroup, rb *resbeat) {
+			rb.B.Stop()
 			wg.Done()
-		}(&wg)
+		}(&wg, v)
 	}
 	// wait all close
 	wg.Wait()
