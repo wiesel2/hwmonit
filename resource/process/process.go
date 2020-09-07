@@ -9,6 +9,7 @@ import (
 	"runtime"
 )
 
+// Process export,
 type Process struct{}
 
 var processMap = map[string]string{
@@ -19,6 +20,7 @@ var processMap = map[string]string{
 	"zombie":   "zombie",
 }
 
+// GetInfo export , implementation of Collector interface
 func (m *Process) GetInfo() (*base.ResourceResult, error) {
 
 	var cmdRes *[]byte

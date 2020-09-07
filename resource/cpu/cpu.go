@@ -11,9 +11,11 @@ import (
 	"unsafe"
 )
 
+// CPU export, resource
 type CPU struct {
 }
 
+// GetInfo export, implementation of Collector interface
 func (c *CPU) GetInfo() (*base.ResourceResult, error) {
 
 	// limitation
@@ -70,6 +72,7 @@ var cupMap = map[string]string{
 
 }
 
+// ParseTOP export, common func to paser `top` command output
 func ParseTOP(s *[]byte, filter_str, key string, keymap map[string]string) (map[string]string, error) {
 	//
 	// output {

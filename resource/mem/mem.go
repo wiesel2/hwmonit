@@ -22,7 +22,7 @@ var memMap = map[string]string{
 	"Buffers": "buffers",
 }
 
-// GetInfo export
+// GetInfo export, implementation of Collector interface
 func (m *MEM) GetInfo() (*base.ResourceResult, error) {
 	cmdRes, err := common.ExecSysCmd(5, "cat", "/proc/meminfo")
 	if err != nil {
@@ -43,6 +43,7 @@ var swapMap = map[string]string{
 	"SwapCached:": "cached",
 }
 
+// GetInfo export, implementation of Collector interface
 func (s *Swap) GetInfo() (*base.ResourceResult, error) {
 	cmdRes, err := common.ExecSysCmd(5, "cat", "/proc/meminfo")
 	if err != nil {
@@ -53,6 +54,7 @@ func (s *Swap) GetInfo() (*base.ResourceResult, error) {
 
 }
 
+// ParseInfo export
 func ParseInfo(mem *[]byte, m map[string]string) map[string]string {
 	res := make(map[string]string)
 	memStr := (*string)(unsafe.Pointer(mem))
@@ -80,8 +82,10 @@ func ParseInfo(mem *[]byte, m map[string]string) map[string]string {
 	return res
 }
 
+// Shm export, resource
 type Shm struct{}
 
+// GetInfo export, implementation of Collector interface
 func (shm *Shm) GetInfo() (*base.ResourceResult, error) {
 	cmdRes, err := common.ExecSysCmd(5, "df")
 	if err != nil {
@@ -92,6 +96,7 @@ func (shm *Shm) GetInfo() (*base.ResourceResult, error) {
 
 }
 
+// ParseSHM export
 func ParseSHM(b *[]byte) map[string]string {
 	res := make(map[string]string)
 	memlines := strings.Split(*(*string)(unsafe.Pointer(b)), "\n")

@@ -1,17 +1,18 @@
 package base
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"time"
 )
 
+// HostInfo export
 type HostInfo struct {
 	Addr net.IPAddr
 	Name string
 }
 
+// ResourceResult export
 type ResourceResult struct {
 	Name      string            `json:"name"`
 	Timestamp time.Time         `json:"timestamp"`
@@ -31,9 +32,11 @@ func NewResourceResult(t ResourceType, r map[string]string) (*ResourceResult, er
 	}, nil
 }
 
+// ResourceType export
 type ResourceType int
 
 const (
+	// RTCPU Export
 	RTCPU ResourceType = iota // CPU
 	RTMEM
 	RTSWAP
@@ -53,10 +56,13 @@ var rtNameMap = map[ResourceType]string{
 	RTPRO: "process",
 }
 
+// Collector export, interface of all resource
+// GetInfo to gather info of resource
 type Collector interface {
 	GetInfo() (*ResourceResult, error)
 }
 
+// Resource Export
 type Resource struct {
 	Name string
 	// ResChan    chan [20]ResourceResult
@@ -75,7 +81,7 @@ func rtToName(rt ResourceType) (string, error) {
 	if find == true {
 		return name, nil
 	}
-	return "", errors.New(fmt.Sprintf("Not find rt: %s", rt))
+	return "", fmt.Errorf("Not find rt: %d", rt)
 }
 
 // not finished
