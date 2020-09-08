@@ -2,14 +2,15 @@ package resource
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"hwmonit/common"
 	"hwmonit/network"
 	"hwmonit/resource/base"
 	"hwmonit/resource/cpu"
+	"hwmonit/resource/disk"
 	"hwmonit/resource/mem"
+	"hwmonit/resource/net"
 	"hwmonit/resource/process"
 	"strconv"
 	"strings"
@@ -134,23 +135,53 @@ func getResourceResult(r *base.Resource) (*base.ResourceResult, error) {
 	return nil, fmt.Errorf("Resource %s is result is empty", r.Name)
 }
 
+func transResourceResult(rr *base.ResourceResult) *network.Results {
+	contents := make([]*network.Content, 0, 10)
+	for _, v := range rr.Result {
+		switch i := v.(type) {
+		case map[string]string:
+			contents = append(contents, &network.Content{Content: i})
+		case string:
+
+			tmp := make(map[string]string)
+			for k1, v1 := range rr.Result {
+				tmp[k1] = v1.(string)
+			}
+			contents = append(contents, &network.Content{Content: tmp})
+			return contentMaker(rr, contents)
+		}
+	}
+	return contentMaker(rr, contents)
+}
+
+func contentMaker(rr *base.ResourceResult, contents []*network.Content) *network.Results {
+	nr := &network.Results{
+		Name:      rr.Name,
+		Timestamp: rr.Timestamp.String(),
+		Results:   contents,
+	}
+	return nr
+}
+
 // get all resource static
-func (rm *Manager) getAllR() map[string]interface{} {
-	res := make(map[string]interface{})
-	for n, v := range rm.rbs {
+func (rm *Manager) getAllR() []*network.Results {
+	res := make([]*network.Results, 0, 10)
+	for _, v := range rm.rbs {
 		rr, err := getResourceResult(v.R)
 		if err != nil {
 			continue
 		}
-		res[n] = rr
+		ress := transResourceResult(rr)
+		res = append(res, ress)
 	}
+
 	return res
 }
 
 // GetAll Export
 // Export for http and gRPC invoke
 func (rm *Manager) GetAll(ctx context.Context, in *empty.Empty) (*network.Resp, error) {
-	res, _ := json.Marshal(rm.getAllR())
+	res := rm.getAllR()
 	var suc int32 = 0
 	var msg string
 	var err error
@@ -159,20 +190,21 @@ func (rm *Manager) GetAll(ctx context.Context, in *empty.Empty) (*network.Resp, 
 		msg = "resource get failed."
 		err = errors.New(msg)
 	}
+	// data []*network.Results =
 	return &network.Resp{
 		State:   suc,
-		Data:    string(res),
+		Data:    res,
 		Message: msg,
 	}, err
 }
 
-func (rm *Manager) getR(name string) map[string]interface{} {
-	res := make(map[string]interface{})
+func (rm *Manager) getR(name string) []*network.Results {
+	res := make([]*network.Results, 0, 10)
 	v, ok := rm.rbs[name]
 	if ok == true {
-		b, err := getResourceResult(v.R)
+		rr, err := getResourceResult(v.R)
 		if err == nil {
-			res[name] = b
+			res = append(res, transResourceResult(rr))
 		}
 	}
 	return res
@@ -181,7 +213,7 @@ func (rm *Manager) getR(name string) map[string]interface{} {
 // Get Export
 // Export for http and gRPC invoke
 func (rm *Manager) Get(ctx context.Context, in *network.GetReq) (*network.Resp, error) {
-	res, _ := json.Marshal(rm.getR(in.Name))
+	res := rm.getR(in.Name)
 	var suc int32 = 0
 	var msg string
 	var err error
@@ -192,7 +224,7 @@ func (rm *Manager) Get(ctx context.Context, in *network.GetReq) (*network.Resp, 
 	}
 	return &network.Resp{
 		State:   suc,
-		Data:    string(res),
+		Data:    res,
 		Message: msg,
 	}, err
 }
@@ -212,12 +244,15 @@ func resourceBuilder(name string) *base.Resource {
 	case "swap":
 		t = base.RTSWAP
 		collector = &mem.Swap{}
-	case "shm":
-		t = base.RTSHM
-		collector = &mem.Shm{}
+	case "disk":
+		t = base.RTDISK
+		collector = &disk.Disk{}
 	case "process":
 		t = base.RTPRO
 		collector = &process.Process{}
+	case "net":
+		t = base.RTNET
+		collector = &net.Net{}
 	default:
 		return nil
 	}

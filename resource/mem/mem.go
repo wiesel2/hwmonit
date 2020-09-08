@@ -10,7 +10,7 @@ import (
 )
 
 // 包含3种类型
-//	memory, swap, shm
+//	memory, swap
 //
 // MEM export
 type MEM struct{}
@@ -55,8 +55,8 @@ func (s *Swap) GetInfo() (*base.ResourceResult, error) {
 }
 
 // ParseInfo export
-func ParseInfo(mem *[]byte, m map[string]string) map[string]string {
-	res := make(map[string]string)
+func ParseInfo(mem *[]byte, m map[string]string) map[string]interface{} {
+	res := make(map[string]interface{})
 	memStr := (*string)(unsafe.Pointer(mem))
 	memlines := strings.Split(*memStr, "\n")
 	for _, line := range memlines {
@@ -72,9 +72,11 @@ func ParseInfo(mem *[]byte, m map[string]string) map[string]string {
 	}
 	t1, te := res["total"]
 	f1, ue := res["free"]
-	if te == ue == true {
-		t2, e1 := strconv.ParseInt(t1, 10, 10)
-		f2, e2 := strconv.ParseInt(f1, 10, 10)
+	vt, okt := t1.(string)
+	vf, okf := f1.(string)
+	if te == ue == true && okt == okf == true {
+		t2, e1 := strconv.ParseInt(vt, 10, 10)
+		f2, e2 := strconv.ParseInt(vf, 10, 10)
 		if e1 == nil && e2 == nil {
 			res["used"] = string(t2 - f2)
 		}
@@ -82,42 +84,43 @@ func ParseInfo(mem *[]byte, m map[string]string) map[string]string {
 	return res
 }
 
-// Shm export, resource
-type Shm struct{}
+// // Shm export, resource
+// type Shm struct{}
 
-// GetInfo export, implementation of Collector interface
-func (shm *Shm) GetInfo() (*base.ResourceResult, error) {
-	cmdRes, err := common.ExecSysCmd(5, "df")
-	if err != nil {
-		return nil, err
-	}
-	data := ParseSHM(cmdRes)
-	return base.NewResourceResult(base.RTSHM, data)
+// // GetInfo export, implementation of Collector interface
+// func (shm *Shm) GetInfo() (*base.ResourceResult, error) {
+// 	cmdRes, err := common.ExecSysCmd(5, "df")
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	data := ParseSHM(cmdRes)
+// 	return base.NewResourceResult(base.RTSHM, data)
 
-}
+// }
 
-// ParseSHM export
-func ParseSHM(b *[]byte) map[string]string {
-	res := make(map[string]string)
-	memlines := strings.Split(*(*string)(unsafe.Pointer(b)), "\n")
-	for _, line := range memlines {
-		lowerStr := strings.ToLower(line)
-		if strings.Index(lowerStr, "shm") == 0 {
-			reg := regexp.MustCompile(`\s+`)
-			spr := reg.Split(lowerStr, 5)
-			if len(spr) < 6 {
-				ss := strings.Split(spr[4], " ")
-				spr = spr[0:4]
-				spr = append(spr, ss...)
-			}
-			res["filesystem"] = spr[0]
-			res["blocks"] = spr[1]
-			res["used"] = spr[2]
-			res["available"] = spr[3]
-			res["use"] = spr[4]
-			res["mounted"] = spr[5]
-			break
-		}
-	}
-	return res
-}
+// // ParseSHM export
+// func ParseSHM(b *[]byte) map[string]interface{} {
+// 	res := make(map[string]interface{})
+// 	memlines := strings.Split(*(*string)(unsafe.Pointer(b)), "\n")
+// 	for _, line := range memlines {
+// 		lowerStr := strings.ToLower(line)
+// 		if strings.Index(lowerStr, "shm") == 0 {
+
+// 			reg := regexp.MustCompile(`\s+`)
+// 			spr := reg.Split(lowerStr, 5)
+// 			if len(spr) < 6 {
+// 				ss := strings.Split(spr[4], " ")
+// 				spr = spr[0:4]
+// 				spr = append(spr, ss...)
+// 			}
+// 			res["filesystem"] = spr[0]
+// 			res["blocks"] = spr[1]
+// 			res["used"] = spr[2]
+// 			res["available"] = spr[3]
+// 			res["use"] = spr[4]
+// 			res["mounted"] = spr[5]
+// 			break
+// 		}
+// 	}
+// 	return res
+// }

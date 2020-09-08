@@ -34,13 +34,13 @@ func TestMem(t *testing.T) {
 	fmt.Printf("%v", reswap)
 }
 
-func TestShm(t *testing.T) {
-	b, err := ioutil.ReadFile("shm1.txt")
-	if err != nil {
-		panic("File not exited")
-	}
+// func TestShm(t *testing.T) {
+// 	b, err := ioutil.ReadFile("shm1.txt")
+// 	if err != nil {
+// 		panic("File not exited")
+// 	}
 
-	res := mem.ParseSHM(&b)
-	fmt.Printf("%v", res)
+// 	res := mem.ParseSHM(&b)
+// 	fmt.Printf("%v", res)
 
-}
+// }

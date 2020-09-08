@@ -73,13 +73,13 @@ var cupMap = map[string]string{
 }
 
 // ParseTOP export, common func to paser `top` command output
-func ParseTOP(s *[]byte, filter_str, key string, keymap map[string]string) (map[string]string, error) {
+func ParseTOP(s *[]byte, filter_str, key string, keymap map[string]string) (map[string]interface{}, error) {
 	//
 	// output {
 	//	"us": "12.6", "sy": "2.6", "ni": "0.0", "id": "84.4", "wa": "0.2", "hi": "0.0", "si": "0.3", "st": "0.0"
 	// }
 
-	res := make(map[string]string)
+	res := make(map[string]interface{})
 	cpuStr := *(*string)(unsafe.Pointer(s))
 	cpulines := strings.Split(cpuStr, "\n")
 	for _, line := range cpulines {

@@ -19,9 +19,9 @@ var configList = []string{
 	"port",
 	"log",
 	"log-dir",
-	"tls",
 	"mem",
-	"shm",
+	"disk",
+	"net",
 	"cpu",
 	"process",
 }
@@ -47,16 +47,16 @@ func GetConfig() map[string]string {
 
 var (
 	h bool   // help
-	t bool   // tls enabled
 	p string // port
 	l string // log name
 	d string // log dir
 	v string = "0.1"
 	m string // mem
-	s string // shm
+	s string // disk
 	c string // cpu
 	r string // process
 	w string // swap
+	n string // net
 )
 
 func setbool(T bool) string {
@@ -68,19 +68,19 @@ func setbool(T bool) string {
 
 func readArgs() {
 	flag.BoolVar(&h, "h", false, "help")
-	flag.BoolVar(&t, "t", false, "enable tls")
-	setEnv("tls", setbool(t))
 
-	flag.StringVar(&m, "m", "30", "memory stat")
+	flag.StringVar(&m, "m", "30", "memory stat collect time")
 	setEnv("mem", m)
-	flag.StringVar(&s, "s", "30", "shm tls")
-	setEnv("shm", s)
-	flag.StringVar(&c, "c", "30", "cpu stat")
+	flag.StringVar(&s, "s", "30", "disk stat collect time")
+	setEnv("disk", s)
+	flag.StringVar(&c, "c", "30", "cpu stat collect time")
 	setEnv("cpu", c)
-	flag.StringVar(&r, "r", "30", "process stat")
+	flag.StringVar(&r, "r", "30", "process stat collect time")
 	setEnv("process", r)
-	flag.StringVar(&w, "w", "30", "swap stat")
+	flag.StringVar(&w, "w", "30", "swap stat collect time")
 	setEnv("process", w)
+	flag.StringVar(&n, "n", "30", "net stat collect time")
+	setEnv("net", w)
 
 	// common config
 	flag.StringVar(&p, "p", "10241", "port")

@@ -14,13 +14,13 @@ type HostInfo struct {
 
 // ResourceResult export
 type ResourceResult struct {
-	Name      string            `json:"name"`
-	Timestamp time.Time         `json:"timestamp"`
-	Result    map[string]string `json:"result"`
+	Name      string                 `json:"name"`
+	Timestamp time.Time              `json:"timestamp"`
+	Result    map[string]interface{} `json:"result"`
 }
 
 // NewResourceResult export
-func NewResourceResult(t ResourceType, r map[string]string) (*ResourceResult, error) {
+func NewResourceResult(t ResourceType, r map[string]interface{}) (*ResourceResult, error) {
 	n, err := rtToName(t)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,6 @@ const (
 	RTCPU ResourceType = iota // CPU
 	RTMEM
 	RTSWAP
-	RTSHM
 	RTDISK
 	RTNET
 	RTPRO
@@ -50,10 +49,9 @@ var rtNameMap = map[ResourceType]string{
 	RTCPU:  "cpu",
 	RTMEM:  "mem",
 	RTSWAP: "swap",
-	// RTDISK: "disk",  // not supported
-	// RTNET:  "net",   // not supported
-	RTSHM: "shm",
-	RTPRO: "process",
+	RTDISK: "disk", // not supported
+	RTNET:  "net",  // not supported
+	RTPRO:  "process",
 }
 
 // Collector export, interface of all resource

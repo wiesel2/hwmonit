@@ -25,8 +25,19 @@ message GetReq{
     string name = 1; // resource name
 }
 
+message Content {
+    map<string, string> content = 1;
+}
+
+message Results {
+    string name = 1; //
+    string timestamp = 2;
+    repeated Content results = 3;
+}
+
 message Resp{
     int32 state = 1; // 0 success, other false
-    string data = 2;
-    string message = 3;
+    string message = 2;
+    repeated Results data = 3;
+    
 }
