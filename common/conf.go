@@ -70,24 +70,25 @@ func readArgs() {
 	flag.BoolVar(&h, "h", false, "help")
 
 	flag.StringVar(&m, "m", "30", "memory stat collect time")
-	setEnv("mem", m)
 	flag.StringVar(&s, "s", "30", "disk stat collect time")
-	setEnv("disk", s)
 	flag.StringVar(&c, "c", "30", "cpu stat collect time")
-	setEnv("cpu", c)
 	flag.StringVar(&r, "r", "30", "process stat collect time")
-	setEnv("process", r)
 	flag.StringVar(&w, "w", "30", "swap stat collect time")
-	setEnv("process", w)
 	flag.StringVar(&n, "n", "30", "net stat collect time")
-	setEnv("net", w)
 
 	// common config
 	flag.StringVar(&p, "p", "10241", "port")
-	setEnv("port", p)
 	flag.StringVar(&l, "l", "hwmonit.log", "log file name")
-	setEnv("log", l)
 	flag.StringVar(&d, "d", "/tmp", "log dir")
+	flag.Parse()
+	setEnv("port", p)
+	setEnv("log", l)
+	setEnv("net", w)
+	setEnv("swap", w)
+	setEnv("process", r)
+	setEnv("cpu", c)
+	setEnv("disk", s)
+	setEnv("mem", m)
 	setEnv("log-dir", d)
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `hwmonit. 
@@ -99,7 +100,6 @@ Options:
 	// force update config
 	readConfig()
 
-	flag.Parse()
 	if h == true {
 		flag.Usage()
 		os.Exit(0)
